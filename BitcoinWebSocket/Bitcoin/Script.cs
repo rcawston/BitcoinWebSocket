@@ -32,7 +32,7 @@ namespace BitcoinWebSocket.Bitcoin
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += dataLength;
                 }
-                else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA1))
+                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA1))
                 {
                     // save the data chunk and an OP_DATA code to the script
                     var dataLength = _scriptBytes[i + 1];
@@ -40,17 +40,19 @@ namespace BitcoinWebSocket.Bitcoin
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += 1 + dataLength;
                 }
-                else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA2))
+                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA2))
                 {
-                    // TODO: get 2 byte count and data
-                    DataChunks.Add(new byte[0]);
+                    // get 2 byte count and data
+                    var dataLength = BitConverter.ToInt16(_scriptBytes, i + 1);
+                    DataChunks.Add(_scriptBytes.Skip(i + 3).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += 2;
                 }
-                else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA4))
+                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA4))
                 {
-                    // TODO: get 4 byte count and data
-                    DataChunks.Add(new byte[0]);
+                    // get 4 byte count and data
+                    var dataLength = BitConverter.ToInt32(_scriptBytes, i + 1);
+                    DataChunks.Add(_scriptBytes.Skip(i + 5).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += 4;
                 }
