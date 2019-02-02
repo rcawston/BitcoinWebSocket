@@ -24,11 +24,12 @@ namespace BitcoinWebSocket.Consumer
                               + transaction.Inputs.Length + " inputs. HasWitness = " +
                               (transaction.HasWitness ? "YES" : "NO")
                               + ". Length Validated = " + (transaction.LengthMatch ? "YES" : "NO") +
-                              " Output Scripts:");
+                              ". Output Scripts:");
 
             // does this transaction contain an output we are watching?
             foreach (var output in transaction.Outputs)
             {
+                Console.WriteLine(ByteToHex.ByteArrayToHex(output.Script));
                 var script = new Script(output.Script);
                 var dataCount = 0;
                 foreach (var opCode in script.OpCodes)
@@ -38,6 +39,7 @@ namespace BitcoinWebSocket.Consumer
                         Console.Write(" " + opCode);
                 Console.WriteLine();
             }
+            Console.WriteLine();
         }
     }
 }

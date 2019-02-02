@@ -30,39 +30,37 @@ namespace BitcoinWebSocket.Bitcoin
                     var dataLength = _scriptBytes[i];
                     DataChunks.Add(_scriptBytes.Skip(i + 1).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 1 + dataLength;
-                    continue;
+                    i += dataLength;
                 }
-                // check if this is a valid op code, and add it to the list
-                if (Enum.IsDefined(typeof(OpCodeType), _scriptBytes[i]) && _scriptBytes[i] != 218) // 218 = DA
-                    OpCodes.Add((OpCodeType) _scriptBytes[i]);
-                else
-                {
-                    // TODO: handle unknown OP_CODE... this shouldn't happen
-                    return;
-                }
-
-                if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA1))
+                else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA1))
                 {
                     // save the data chunk and an OP_DATA code to the script
                     var dataLength = _scriptBytes[i + 1];
                     DataChunks.Add(_scriptBytes.Skip(i + 2).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 2 + dataLength;
+                    i += 1 + dataLength;
                 }
                 else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA2))
                 {
                     // TODO: get 2 byte count and data
                     DataChunks.Add(new byte[0]);
                     OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 3;
+                    i += 2;
                 }
                 else if (_scriptBytes[i].Equals(OpCodeType.OP_PUSHDATA4))
                 {
                     // TODO: get 4 byte count and data
                     DataChunks.Add(new byte[0]);
                     OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 5;
+                    i += 4;
+                }
+                // check if this is a valid op code, and add it to the list
+                else if (Enum.IsDefined(typeof(OpCodeType), _scriptBytes[i]) && _scriptBytes[i] != 218) // 218 = DA
+                    OpCodes.Add((OpCodeType) _scriptBytes[i]);
+                else
+                {
+                    // TODO: handle unknown OP_CODE... this shouldn't happen
+                    return;
                 }
             }
         }
