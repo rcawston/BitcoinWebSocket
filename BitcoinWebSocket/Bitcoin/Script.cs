@@ -7,7 +7,7 @@ namespace BitcoinWebSocket.Bitcoin
 {
     public class Script
     {
-        private readonly byte[] _scriptBytes;
+        public byte[] _scriptBytes { get; private set; }
         public List<OpCodeType> OpCodes { get; }
         public List<byte[]> DataChunks { get; }
 
@@ -32,37 +32,48 @@ namespace BitcoinWebSocket.Bitcoin
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += dataLength;
                 }
-                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA1))
+                else switch (_scriptBytes[i])
                 {
-                    // save the data chunk and an OP_DATA code to the script
-                    var dataLength = _scriptBytes[i + 1];
-                    DataChunks.Add(_scriptBytes.Skip(i + 2).Take(dataLength).ToArray());
-                    OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 1 + dataLength;
-                }
-                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA2))
-                {
-                    // get 2 byte count and data
-                    var dataLength = BitConverter.ToInt16(_scriptBytes, i + 1);
-                    DataChunks.Add(_scriptBytes.Skip(i + 3).Take(dataLength).ToArray());
-                    OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 2;
-                }
-                else if (_scriptBytes[i].Equals((byte) OpCodeType.OP_PUSHDATA4))
-                {
-                    // get 4 byte count and data
-                    var dataLength = BitConverter.ToInt32(_scriptBytes, i + 1);
-                    DataChunks.Add(_scriptBytes.Skip(i + 5).Take(dataLength).ToArray());
-                    OpCodes.Add(OpCodeType.OP_DATA);
-                    i += 4;
-                }
-                // check if this is a valid op code, and add it to the list
-                else if (Enum.IsDefined(typeof(OpCodeType), _scriptBytes[i]) && _scriptBytes[i] != 218) // 218 = DA
-                    OpCodes.Add((OpCodeType) _scriptBytes[i]);
-                else
-                {
-                    // TODO: handle unknown OP_CODE... this shouldn't happen
-                    return;
+                    case (byte) OpCodeType.OP_PUSHDATA1:
+                    {
+                        // save the data chunk and an OP_DATA code to the script
+                        var dataLength = _scriptBytes[i + 1];
+                        DataChunks.Add(_scriptBytes.Skip(i + 2).Take(dataLength).ToArray());
+                        OpCodes.Add(OpCodeType.OP_DATA);
+                        i += 1 + dataLength;
+                        break;
+                    }
+                    case (byte) OpCodeType.OP_PUSHDATA2:
+                    {
+                        // get 2 byte count and data
+                        var dataLength = BitConverter.ToInt16(_scriptBytes, i + 1);
+                        DataChunks.Add(_scriptBytes.Skip(i + 3).Take(dataLength).ToArray());
+                        OpCodes.Add(OpCodeType.OP_DATA);
+                        i += 2 + dataLength;
+                        break;
+                    }
+                    case (byte) OpCodeType.OP_PUSHDATA4:
+                    {
+                        // get 4 byte count and data
+                        var dataLength = BitConverter.ToInt32(_scriptBytes, i + 1);
+                        DataChunks.Add(_scriptBytes.Skip(i + 5).Take(dataLength).ToArray());
+                        OpCodes.Add(OpCodeType.OP_DATA);
+                        i += 4 + dataLength;
+                        break;
+                    }
+                    default:
+                    {
+                        // check if this is a valid op code, and add it to the list
+                        if (Enum.IsDefined(typeof(OpCodeType), _scriptBytes[i]) && _scriptBytes[i] != 218) // 218 = DA
+                            OpCodes.Add((OpCodeType) _scriptBytes[i]);
+                        else
+                        {
+                            // TODO: handle unknown OP_CODE... this shouldn't happen
+                            return;
+                        }
+
+                        break;
+                    }
                 }
             }
         }
@@ -73,6 +84,7 @@ namespace BitcoinWebSocket.Bitcoin
 	///     https://github.com/bitcoin/bitcoin/blob/v0.17.1/src/script/script.h#L46L187
 	/// </summary>
 	[SuppressMessage("ReSharper", "InconsistentNaming")]
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     public enum OpCodeType : byte
     {
         // OP_CODES above 0xB9 (OP_NOP10) are invalid - we use 0xDA internally to indicate a data chunk
