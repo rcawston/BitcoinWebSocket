@@ -8,24 +8,8 @@ namespace BitcoinWebSocket.Bitcoin
 {
     public class Base58
     {
-        public const int CheckSumSizeInBytes = 4;
+        public const int CheckSumBytes = 4;
         private const string Digits = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-
-        public static byte[] AddCheckSum(byte[] data)
-        {
-            var checkSum = GetCheckSum(data);
-            var dataWithCheckSum = ArrayTools.ConcatArrays(data, checkSum);
-            return dataWithCheckSum;
-        }
-
-        // Returns null if the checksum is invalid
-        public static byte[] VerifyAndRemoveCheckSum(byte[] data)
-        {
-            var result = ArrayTools.SubArray(data, 0, data.Length - CheckSumSizeInBytes);
-            var givenCheckSum = ArrayTools.SubArray(data, data.Length - CheckSumSizeInBytes);
-            var correctCheckSum = GetCheckSum(result);
-            return givenCheckSum.SequenceEqual(correctCheckSum) ? result : null;
-        }
 
         public static string Encode(byte[] data)
         {
@@ -54,16 +38,16 @@ namespace BitcoinWebSocket.Bitcoin
             return Encode(AddCheckSum(data));
         }
 
-        private static byte[] GetCheckSum(byte[] data)
+        private static byte[] AddCheckSum(byte[] data)
         {
             SHA256 sha256 = new SHA256Managed();
             var hash1 = sha256.ComputeHash(data);
             var hash2 = sha256.ComputeHash(hash1);
 
-            var result = new byte[CheckSumSizeInBytes];
-            Buffer.BlockCopy(hash2, 0, result, 0, result.Length);
-
-            return result;
+            var checkSum = new byte[CheckSumBytes];
+            Buffer.BlockCopy(hash2, 0, checkSum, 0, checkSum.Length);
+            var dataWithCheckSum = ArrayTools.ConcatArrays(data, checkSum);
+            return dataWithCheckSum;
         }
     }
 }

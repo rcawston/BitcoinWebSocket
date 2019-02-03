@@ -20,7 +20,7 @@ namespace BitcoinWebSocket.Bitcoin
 
         public byte[] Script
         {
-            get => _script._scriptBytes;
+            get => _script.ScriptBytes;
             set
             {
                 _script = new Script(value);
@@ -33,6 +33,12 @@ namespace BitcoinWebSocket.Bitcoin
                     case OutputType.P2SH:
                         Address = Base58.EncodeWithCheckSum(ArrayTools.ConcatArrays(new byte[1] { 5 } , _script.DataChunks[0]));
                         break;
+                    case OutputType.P2WPKH:
+                    case OutputType.P2WSH:
+                        Address = Bech32.EncodeWithHeaderAndChecksum(0, _script.DataChunks[0]);
+                        break;
+                    case OutputType.DATA:
+                    case OutputType.OTHER:
                     default:
                         Address = "";
                         break;

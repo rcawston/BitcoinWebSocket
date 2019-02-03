@@ -39,7 +39,7 @@ namespace BitcoinWebSocket.Consumer
                         Console.Write(" " + opCode);
                 Console.WriteLine();
 
-                Console.WriteLine(" Type = " + output.Type + ". Address = " + output.Address);
+                Console.WriteLine(" Type = " + output.Type + (output.Address == "" ? "" : ". Address = " + output.Address));
             }
             Console.WriteLine();
         }

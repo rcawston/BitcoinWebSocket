@@ -7,13 +7,13 @@ namespace BitcoinWebSocket.Bitcoin
 {
     public class Script
     {
-        public byte[] _scriptBytes { get; private set; }
+        public byte[] ScriptBytes { get; }
         public List<OpCodeType> OpCodes { get; }
         public List<byte[]> DataChunks { get; }
 
         public Script(IEnumerable<byte> script)
         {
-            _scriptBytes = script.ToArray();
+            ScriptBytes = script.ToArray();
             OpCodes = new List<OpCodeType>();
             DataChunks = new List<byte[]>();
             Decode();
@@ -21,24 +21,24 @@ namespace BitcoinWebSocket.Bitcoin
 
         private void Decode()
         {
-            for (var i = 0; i < _scriptBytes.Length; i++)
+            for (var i = 0; i < ScriptBytes.Length; i++)
             {
                 // OP_PUSH 
-                if (_scriptBytes[i] > 1 && _scriptBytes[i] < 76)
+                if (ScriptBytes[i] > 1 && ScriptBytes[i] < 76)
                 {
                     // save the data chunk and an OP_DATA code to the script
-                    var dataLength = _scriptBytes[i];
-                    DataChunks.Add(_scriptBytes.Skip(i + 1).Take(dataLength).ToArray());
+                    var dataLength = ScriptBytes[i];
+                    DataChunks.Add(ScriptBytes.Skip(i + 1).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
                     i += dataLength;
                 }
-                else switch (_scriptBytes[i])
+                else switch (ScriptBytes[i])
                 {
                     case (byte) OpCodeType.OP_PUSHDATA1:
                     {
                         // save the data chunk and an OP_DATA code to the script
-                        var dataLength = _scriptBytes[i + 1];
-                        DataChunks.Add(_scriptBytes.Skip(i + 2).Take(dataLength).ToArray());
+                        var dataLength = ScriptBytes[i + 1];
+                        DataChunks.Add(ScriptBytes.Skip(i + 2).Take(dataLength).ToArray());
                         OpCodes.Add(OpCodeType.OP_DATA);
                         i += 1 + dataLength;
                         break;
@@ -46,8 +46,8 @@ namespace BitcoinWebSocket.Bitcoin
                     case (byte) OpCodeType.OP_PUSHDATA2:
                     {
                         // get 2 byte count and data
-                        var dataLength = BitConverter.ToInt16(_scriptBytes, i + 1);
-                        DataChunks.Add(_scriptBytes.Skip(i + 3).Take(dataLength).ToArray());
+                        var dataLength = BitConverter.ToInt16(ScriptBytes, i + 1);
+                        DataChunks.Add(ScriptBytes.Skip(i + 3).Take(dataLength).ToArray());
                         OpCodes.Add(OpCodeType.OP_DATA);
                         i += 2 + dataLength;
                         break;
@@ -55,8 +55,8 @@ namespace BitcoinWebSocket.Bitcoin
                     case (byte) OpCodeType.OP_PUSHDATA4:
                     {
                         // get 4 byte count and data
-                        var dataLength = BitConverter.ToInt32(_scriptBytes, i + 1);
-                        DataChunks.Add(_scriptBytes.Skip(i + 5).Take(dataLength).ToArray());
+                        var dataLength = BitConverter.ToInt32(ScriptBytes, i + 1);
+                        DataChunks.Add(ScriptBytes.Skip(i + 5).Take(dataLength).ToArray());
                         OpCodes.Add(OpCodeType.OP_DATA);
                         i += 4 + dataLength;
                         break;
@@ -64,8 +64,8 @@ namespace BitcoinWebSocket.Bitcoin
                     default:
                     {
                         // check if this is a valid op code, and add it to the list
-                        if (Enum.IsDefined(typeof(OpCodeType), _scriptBytes[i]) && _scriptBytes[i] != 218) // 218 = DA
-                            OpCodes.Add((OpCodeType) _scriptBytes[i]);
+                        if (Enum.IsDefined(typeof(OpCodeType), ScriptBytes[i]) && ScriptBytes[i] != 218) // 218 = DA
+                            OpCodes.Add((OpCodeType) ScriptBytes[i]);
                         else
                         {
                             // TODO: handle unknown OP_CODE... this shouldn't happen
