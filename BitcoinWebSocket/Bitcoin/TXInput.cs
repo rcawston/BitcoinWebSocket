@@ -1,5 +1,8 @@
 ﻿namespace BitcoinWebSocket.Bitcoin
 {
+    /// <summary>
+    ///     Represents a Bitcoin Transaction Input
+    /// </summary>
     public class TXInput
     {
         public byte[] Hash;

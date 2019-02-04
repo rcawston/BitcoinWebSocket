@@ -2,6 +2,9 @@
 
 namespace BitcoinWebSocket.Util
 {
+    /// <summary>
+    ///     Utility class for arrays
+    /// </summary>
     public class ArrayTools
     {
         public static T[] ConcatArrays<T>(T[] arr1, T[] arr2)

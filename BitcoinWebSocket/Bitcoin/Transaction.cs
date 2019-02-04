@@ -4,6 +4,9 @@ using System.Linq;
 
 namespace BitcoinWebSocket.Bitcoin
 {
+    /// <summary>
+    ///     Represents a bitcoin transaction
+    /// </summary>
     public class Transaction
     {
         private readonly byte[] _txBytes;
@@ -17,6 +20,12 @@ namespace BitcoinWebSocket.Bitcoin
         public int LockTime { get; private set; }
         public bool LengthMatch { get; private set; }
 
+        /// <summary>
+        ///     Constructor
+        ///     - saves the raw transaction bytes
+        ///     - decodes the transaction data
+        /// </summary>
+        /// <param name="txBytes">raw transaction as byte array</param>
         public Transaction(IEnumerable<byte> txBytes)
         {
             _txBytes = txBytes.ToArray();

@@ -4,11 +4,23 @@ using BitcoinWebSocket.Util;
 
 namespace BitcoinWebSocket.Consumer
 {
+    /// <inheritdoc />
+    /// <summary>
+    ///     A consumer thread that processes raw transactions
+    /// </summary>
     public class TXConsumer : Consumer
     {
+        /// <summary>
+        ///     Processes raw bitcoin transactions
+        ///     - decodes the transaction, output scripts, and output addresses
+        /// </summary>
+        /// <param name="data">raw transaction byte array</param>
         public override void DoWork(byte[] data)
         {
+            // hex version of the transaction
             var txHex = ByteToHex.ByteArrayToHex(data);
+
+            // attempt to decode the transaction (also decodes output scripts and addresses)
             Transaction transaction;
             try
             {
@@ -26,19 +38,23 @@ namespace BitcoinWebSocket.Consumer
                               + ". Length Validated = " + (transaction.LengthMatch ? "YES" : "NO") +
                               ". Output Scripts:");
 
-            // does this transaction contain an output we are watching?
+
+            // TODO: does this transaction contain an output we are watching?
+            // iterate over each output in the transaction
             foreach (var output in transaction.Outputs)
             {
+                // write out the raw output script as hex
                 Console.WriteLine(ByteToHex.ByteArrayToHex(output.Script));
                 var script = new Script(output.Script);
                 var dataCount = 0;
+                // write out the ASM version of the output
                 foreach (var opCode in script.OpCodes)
                     if (opCode == OpCodeType.OP_DATA)
                         Console.Write(" " + ByteToHex.ByteArrayToHex(script.DataChunks[dataCount++]));
                     else
                         Console.Write(" " + opCode);
                 Console.WriteLine();
-
+                // write out the type and address (if the output is a known payment type)
                 Console.WriteLine(" Type = " + output.Type + (output.Address == "" ? "" : ". Address = " + output.Address));
             }
             Console.WriteLine();

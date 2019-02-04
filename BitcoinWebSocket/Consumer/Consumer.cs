@@ -3,6 +3,9 @@ using System.Threading;
 
 namespace BitcoinWebSocket.Consumer
 {
+    /// <summary>
+    ///     A consumer thread that waits for queued tasks and does processing when tasks are queued
+    /// </summary>
     public abstract class Consumer
     {
         private readonly object _locker = new object();
@@ -23,9 +26,12 @@ namespace BitcoinWebSocket.Consumer
 
         public void Dispose()
         {
-            EnqueueTask(null, 0); // Signal the consumer to exit.
-            _worker.Join(); // Wait for the consumer's thread to finish.
-            _wh.Close(); // Release any OS resources.
+            // Signal the consumer to exit.
+            EnqueueTask(null, 0);
+            // Wait for the consumer's thread to finish.
+            _worker.Join();
+            // Release any OS resources.
+            _wh.Close();
         }
 
         /// <summary>

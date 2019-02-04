@@ -5,24 +5,49 @@ using BitcoinWebSocket.Util;
 
 namespace BitcoinWebSocket.Bitcoin
 {
+    /// <summary>
+    ///     Bech32 (Bitcoin Address Format) Encoder
+    ///     - converts byte arrays from bitcoin scripts into bech32 strings
+    ///     - As described in: https://github.com/bitcoin/bips/blob/master/bip-0173.mediawiki
+    /// </summary>
     public class Bech32
     {
+        // Bech32 charset/digits
         private const string Digits = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+        // Used by polymod checksum generation
         private static readonly uint[] Generator = { 0x3b6a57b2U, 0x26508e6dU, 0x1ea119faU, 0x3d4233ddU, 0x2a1462b3U };
 
+        /// <summary>
+        ///     Encodes a bech32 address
+        /// </summary>
+        /// <param name="witnessVersion">the witness version (only v0 exists so far)</param>
+        /// <param name="witnessScriptData">byte array representing address from bitcoin OP_0 (segwit) script</param>
+        /// <param name="mainnet">generate mainnet address, otherwise testnet address</param>
+        /// <returns>bech32 encoded string with checksum and header</returns>
         public static string EncodeWithHeaderAndChecksum(byte witnessVersion, byte[] witnessScriptData, bool mainnet = true)
         {
+            // header is bc for mainnet, or tb for testnet
             var header = mainnet ? "bc" : "tb";
+            // convert byte array from 8bits to 5
             var base5 = ConvertBits(witnessScriptData, 8, 5, true);
 
+            // generate checksum from witnessVersion concat base5 array
             var checksumBytes = CreateChecksum(header, ArrayTools.ConcatArrays(new[] { witnessVersion }, base5));
+            // append the checksum to the base5 array
             var combined = base5.Concat(checksumBytes).ToArray();
 
+            // convert byte array to bech32 string
             var encoded = BytesToBech32String(combined);
 
+            // return address format - Header+Separator(1)+WitnessVersion+EncodedData
             return header + "1" + Digits[witnessVersion] + encoded;
         }
 
+        /// <summary>
+        ///     Internal function that computes bech32 checksum
+        /// </summary>
+        /// <param name="values">base5 byte array of the WitnessVersion+Address</param>
+        /// <returns>bech32 checksum</returns>
         private static uint PolyMod(IEnumerable<byte> values)
         {
             uint chk = 1;
@@ -35,6 +60,11 @@ namespace BitcoinWebSocket.Bitcoin
             return chk;
         }
 
+        /// <summary>
+        ///     Expands the Human-Readable-Part of the string into values for checksum computation
+        /// </summary>
+        /// <param name="hrp">human-readable-part of string (e.g. bc prefix)</param>
+        /// <returns></returns>
         private static IEnumerable<byte> HrpExpand(string hrp)
         {
             var ret = new byte[hrp.Length * 2 + 1];
@@ -52,6 +82,12 @@ namespace BitcoinWebSocket.Bitcoin
             return ret;
         }
 
+        /// <summary>
+        ///     Creates the checksum for a bech32 format bitcoin address
+        /// </summary>
+        /// <param name="hrp">human-readable-part (e.g. bc)</param>
+        /// <param name="data">base5 byte array of witness version + address</param>
+        /// <returns>bech32 checksum bytes</returns>
         private static IEnumerable<byte> CreateChecksum(string hrp, IEnumerable<byte> data)
         {
             var values = HrpExpand(hrp).Concat(data).ToArray();
@@ -103,17 +139,22 @@ namespace BitcoinWebSocket.Bitcoin
             return result;
         }
 
+        /// <summary>
+        ///     Converts byte array into bech32 string
+        /// </summary>
+        /// <param name="input">byte array of the address</param>
+        /// <returns>bech32 string</returns>
         private static string BytesToBech32String(IEnumerable<byte> input)
         {
-            var s = string.Empty;
-            foreach (var c in input)
+            var ret = string.Empty;
+            foreach (var byteC in input)
             {
-                if ((c & 0xe0) != 0)
+                if ((byteC & 0xe0) != 0)
                     return null;
-                s += Digits[c];
+                ret += Digits[byteC];
             }
 
-            return s;
+            return ret;
         }
     }
 }

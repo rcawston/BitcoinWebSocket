@@ -5,44 +5,69 @@ using System.Linq;
 
 namespace BitcoinWebSocket.Bitcoin
 {
+    /// <summary>
+    ///     Represents a bitcoin script
+    /// </summary>
     public class Script
     {
+        // byte array of the script
         public byte[] ScriptBytes { get; }
+        // ordered op codes of the script
         public List<OpCodeType> OpCodes { get; }
+        // data in the script
         public List<byte[]> DataChunks { get; }
 
+        /// <summary>
+        ///     Constructor
+        ///     - saves the specified raw script
+        ///     - generates op_code list and retrieves data chunks
+        /// </summary>
+        /// <param name="script">script as byte array</param>
         public Script(IEnumerable<byte> script)
         {
+            // save the script bytes
             ScriptBytes = script.ToArray();
+            // create the op_code and data storage
             OpCodes = new List<OpCodeType>();
             DataChunks = new List<byte[]>();
+            // populate op_codes and retrieve data sections from the script
             Decode();
         }
 
+        /// <summary>
+        ///     Decodes the script into op_codes and data sections
+        /// </summary>
         private void Decode()
         {
+            // Iterate over each byte in the script.
+            // When a data chunk (non-op_code section) is encountered,
+            //   i will be incremented so as to skip reading op_codes from the data
             for (var i = 0; i < ScriptBytes.Length; i++)
             {
-                // OP_PUSH 
+                // OP_PUSH - indicates a data section of ScriptBytes[i] length
                 if (ScriptBytes[i] > 1 && ScriptBytes[i] < 76)
                 {
-                    // save the data chunk and an OP_DATA code to the script
+                    // save the data chunk and add an OP_DATA code to the script
                     var dataLength = ScriptBytes[i];
                     DataChunks.Add(ScriptBytes.Skip(i + 1).Take(dataLength).ToArray());
                     OpCodes.Add(OpCodeType.OP_DATA);
+                    // increment i to skip over the data section during further op_code processing
                     i += dataLength;
                 }
                 else switch (ScriptBytes[i])
                 {
+                    // OP_PUSHDATA1 - indicates a data section of ScriptBytes[i+1] length
                     case (byte) OpCodeType.OP_PUSHDATA1:
                     {
                         // save the data chunk and an OP_DATA code to the script
                         var dataLength = ScriptBytes[i + 1];
                         DataChunks.Add(ScriptBytes.Skip(i + 2).Take(dataLength).ToArray());
                         OpCodes.Add(OpCodeType.OP_DATA);
+                        // increment i to skip over the data section during further op_code processing
                         i += 1 + dataLength;
                         break;
                     }
+                    // OP_PUSHDATA2 - indicates a data section with 2 bytes indicating length
                     case (byte) OpCodeType.OP_PUSHDATA2:
                     {
                         // get 2 byte count and data
@@ -52,6 +77,7 @@ namespace BitcoinWebSocket.Bitcoin
                         i += 2 + dataLength;
                         break;
                     }
+                    // OP_PUSHDATA2 - indicates a data section with 4 bytes indicating length
                     case (byte) OpCodeType.OP_PUSHDATA4:
                     {
                         // get 4 byte count and data
@@ -61,9 +87,10 @@ namespace BitcoinWebSocket.Bitcoin
                         i += 4 + dataLength;
                         break;
                     }
+                    // any other OP_CODE (non-data identifier)
                     default:
                     {
-                        // check if this is a valid op code, and add it to the list
+                        // check if this is a valid/known op code, and add it to the list
                         if (Enum.IsDefined(typeof(OpCodeType), ScriptBytes[i]) && ScriptBytes[i] != 218) // 218 = DA
                             OpCodes.Add((OpCodeType) ScriptBytes[i]);
                         else
@@ -71,7 +98,6 @@ namespace BitcoinWebSocket.Bitcoin
                             // TODO: handle unknown OP_CODE... this shouldn't happen
                             return;
                         }
-
                         break;
                     }
                 }
