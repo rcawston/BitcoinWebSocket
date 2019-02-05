@@ -6,9 +6,9 @@
     public class TXInput
     {
         public byte[] Hash;
-        public int Index;
+        public uint Index;
         public byte[] Script;
-        public int Sequence;
+        public uint Sequence;
         public byte[] Witness = new byte[0];
     }
 }

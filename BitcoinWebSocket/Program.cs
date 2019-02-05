@@ -7,8 +7,12 @@ namespace BitcoinWebSocket
     {
         private static void Main(string[] args)
         {
-            var ZMQServer = ConfigurationManager.AppSettings["ZMQPublisher"];
-            var sub = new ZMQ.Subscriber(ZMQServer, "rawtx", new TXConsumer());
+            // get ZMQ server address from app settings
+            var ZMQServerTX = ConfigurationManager.AppSettings["ZMQPublisherRawTX"];
+            var ZMQServerBlock = ConfigurationManager.AppSettings["ZMQPublisherRawBlock"];
+            // start ZMQ subscribers
+            var rawTXSubscriber = new ZMQ.Subscriber(ZMQServerTX, "rawtx", new TXConsumer());
+            var rawBlockSubscriber = new ZMQ.Subscriber(ZMQServerBlock, "rawblock", new BlockConsumer());
         }
     }
 }

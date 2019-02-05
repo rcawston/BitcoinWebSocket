@@ -4,7 +4,7 @@ namespace BitcoinWebSocket.Bitcoin
 {
     /// <summary>
     ///     Known output types
-    ///     - P2PH - Pay-to-Publickey-Hash
+    ///     - P2PKH - Pay-to-PublicKey-Hash
     ///     - P2SH - Pay-to-Script-Hash
     ///     - P2WPKH - Pay-to-Witness-PublicKey-Hash
     ///     - P2WSH - Pay-to-Witness-Script-Hash
@@ -13,7 +13,7 @@ namespace BitcoinWebSocket.Bitcoin
     /// </summary>
     public enum OutputType
     {
-        P2PH,
+        P2PKH,
         P2SH,
         P2WPKH,
         P2WSH,
@@ -26,7 +26,7 @@ namespace BitcoinWebSocket.Bitcoin
     public class TXOutput
     {
         // value spent to the output
-        public long Value { get; set; }
+        public ulong Value { get; set; }
         // type of output, if known type
         public OutputType Type { get; private set; }
         // base58 or bech32 formatted address to which the output spends
@@ -46,11 +46,11 @@ namespace BitcoinWebSocket.Bitcoin
                 Type = GetOutputType();
 
                 // decode the address data based on output type
-                // P2PH and P2SH use base58, and P2WPKH and P2WSH use bech32 format addresses
+                // P2PKH and P2SH use base58, and P2WPKH and P2WSH use bech32 format addresses
                 // for anything else, set address to an empty string
                 switch (Type)
                 {
-                    case OutputType.P2PH:
+                    case OutputType.P2PKH:
                         Address = Base58.EncodeWithCheckSum(ArrayTools.ConcatArrays(new byte[1] { 0 }, _script.DataChunks[0]));
                         break;
                     case OutputType.P2SH:
@@ -81,7 +81,7 @@ namespace BitcoinWebSocket.Bitcoin
 
             switch (_script.OpCodes.Count)
             {
-                // P2PH - Pay-to-Publickey-Hash
+                // P2PKH - Pay-to-PublicKey-Hash
                 // OP_DUP OP_HASH160 <address> OP_EQUALVERIFY OP_CHECKSIG
                 case 5 when
                     _script.OpCodes[0] == OpCodeType.OP_DUP &&
@@ -89,7 +89,7 @@ namespace BitcoinWebSocket.Bitcoin
                     _script.OpCodes[2] == OpCodeType.OP_DATA &&
                     _script.OpCodes[3] == OpCodeType.OP_EQUALVERIFY &&
                     _script.OpCodes[4] == OpCodeType.OP_CHECKSIG:
-                    return OutputType.P2PH;
+                    return OutputType.P2PKH;
 
                 // P2SH - Pay-to-Script-Hash
                 // OP_HASH160 <address=Hash160(RedeemScript)> OP_EQUAL
