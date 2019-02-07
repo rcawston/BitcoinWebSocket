@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+    <title>Bitcoin WebSocket Client</title>
+    <script type="text/javascript">
+        function copyDetails(text, field) {
+            document.getElementById(field).value = text;
+        }
+
+        var start = function () {
+            var inc = document.getElementById('incoming');
+            var wsImpl = window.WebSocket || window.MozWebSocket;
+            var form = document.getElementById('addressForm');
+            var form2 = document.getElementById('dataForm');
+            var input = document.getElementById('sendText');
+            var input2 = document.getElementById('sendText2');
+
+            inc.innerHTML += "connecting to server ..<br/>";
+
+            // create a new websocket and connect
+            window.ws = new wsImpl('ws://localhost:8181/');
+
+            // handle data from the server
+            ws.onmessage = function (evt) {
+                inc.innerHTML += evt.data + '<br/>';
+            };
+            // handle connection establishment
+            ws.onopen = function () {
+                inc.innerHTML += '.. connection open<br/>';
+            };
+            // handle connection closure
+            ws.onclose = function () {
+                inc.innerHTML += '.. connection closed<br/>';
+            }
+            // monitor form fields for input
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var val = input.value;
+                ws.send('{"op":"addr_sub", "addr":"' + val + '"}');
+                input.value = "";
+            });
+            form2.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var val = input2.value;
+                ws.send('{"op":"data_sub", "addr":"' + val + '"}');
+                input2.value = "";
+            });
+
+        }
+        window.onload = start;
+    </script>
+</head>
+<body>
+<form id="addressForm">
+    <input id="sendText" placeholder="Bitcoin Address"/>
+    <p>Try: <a onclick="copyDetails('1FoWyxwPXuj4C6abqwhjDWdz6D4PZgYRjA', 'sendText');" href="#">1FoWyxwPXuj4C6abqwhjDWdz6D4PZgYRjA</a>
+        for an Active Address</p>
+</form>
+<form id="dataForm">
+    <input id="sendText2" placeholder="OP_RETURN Data Prefix in Hex"/>
+    <p>Try: <a onclick="copyDetails('6f6d6e69', 'sendText2');" href="#">6f6d6e69</a> for OmniLayer</p>
+</form>
+<p id="incoming" style="width: 98%"></p>
+</body>
+</html>

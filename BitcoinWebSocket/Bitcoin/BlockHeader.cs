@@ -11,14 +11,24 @@ namespace BitcoinWebSocket.Bitcoin
     public class BlockHeader : Serializer
     {
         public uint BlockVersion { get; private set; }
-        public byte[] PrevBlockHash { get; private set; }
+        public string PrevBlockHash { get; private set; }
         public byte[] MerkleRootHash { get; private set; }
         public uint TimeStamp { get; private set; }
         public uint DiffTarget { get; private set; }
         public uint Nonce { get; private set; }
-        public byte[] BlockHash { get; private set; }
+        public string BlockHashHex { get; private set; }
 
         public bool LengthMatch { get; private set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        ///     Constructor
+        ///     - creates an empty block header object
+        ///     - used for LiteDB queries
+        /// </summary>
+        public BlockHeader() : base(new List<byte>())
+        {
+        }
 
         /// <inheritdoc />
         /// <summary>
@@ -40,7 +50,7 @@ namespace BitcoinWebSocket.Bitcoin
             BlockVersion = ReadUInt();
 
             // previous block hash
-            PrevBlockHash = ReadSlice(32);
+            PrevBlockHash = ByteToHex.ByteArrayToHex(ReadSlice(32));
 
             // merkle root hash
             MerkleRootHash = ReadSlice(32);
@@ -59,7 +69,7 @@ namespace BitcoinWebSocket.Bitcoin
 
             // blockHash = sha256(sha256(header_data))
             SHA256 sha256 = new SHA256Managed();
-            BlockHash = sha256.ComputeHash(sha256.ComputeHash(ByteData));
+            BlockHashHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
         }
     }
 }

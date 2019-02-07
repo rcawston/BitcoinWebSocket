@@ -1,20 +1,40 @@
 ﻿using System.Collections.Generic;
+using System.Security.Cryptography;
+using BitcoinWebSocket.Schema;
+using BitcoinWebSocket.Util;
+using LiteDB;
 
 namespace BitcoinWebSocket.Bitcoin
 {
     /// <summary>
     ///     Represents a bitcoin transaction
     /// </summary>
-    public class Transaction : Serializer
+    public class Transaction : Serializer, IDatabaseData
     {
         public TXInput[] Inputs { get; private set; }
         public TXOutput[] Outputs { get; private set; }
 
+        public string TXIDHex { get; set; }
         public bool HasWitness { get; private set; }
         public uint TXVersion { get; private set; }
         public uint LockTime { get; private set; }
         public bool LengthMatch { get; private set; }
-        public byte[] IncludedInBlock { get; }
+        public string IncludedInBlock { get; set; }
+
+        // database fields:
+        public ObjectId Id { get; set; }
+        public long LastUpdated { get; set; }
+        public long FirstSeen { get; set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        ///     Constructor
+        ///     - creates an empty transaction object
+        ///     - used for LiteDB queries
+        /// </summary>
+        public Transaction() : base(new List<byte>())
+        {
+        }
 
         /// <inheritdoc />
         /// <summary>
@@ -24,6 +44,8 @@ namespace BitcoinWebSocket.Bitcoin
         /// <param name="txBytes">raw transaction as byte array</param>
         public Transaction(IEnumerable<byte> txBytes) : base(txBytes)
         {
+            var sha256 = new SHA256Managed();
+            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
             Decode();
         }
 
@@ -31,9 +53,12 @@ namespace BitcoinWebSocket.Bitcoin
         /// <summary>
         ///     Constructor
         ///     - creates a transaction object given transaction properties
+        ///     - used for transactions found in blocks
         /// </summary>
-        public Transaction(byte[] inclusionBlock, uint txVersion, bool hasWitness, TXInput[] inputs, TXOutput[] outputs, uint lockTime) : base(new byte[0])
+        public Transaction(IEnumerable<byte> txBytes, string inclusionBlock, uint txVersion, bool hasWitness, TXInput[] inputs, TXOutput[] outputs, uint lockTime) : base(txBytes)
         {
+            var sha256 = new SHA256Managed();
+            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
             IncludedInBlock = inclusionBlock;
             TXVersion = txVersion;
             HasWitness = hasWitness;

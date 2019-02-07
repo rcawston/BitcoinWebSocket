@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Security.Cryptography;
-using BitcoinWebSocket.Util;
+using BitcoinWebSocket.Schema;
+using LiteDB;
 
 namespace BitcoinWebSocket.Bitcoin
 {
@@ -8,18 +8,32 @@ namespace BitcoinWebSocket.Bitcoin
     ///     Represents a bitcoin block
     ///     https://en.bitcoin.it/wiki/Block
     ///     - The block passed by ZMQ starts at the header
-    ///     - Unlike to on disk, there is no magic number or blocksize passed at the start of a ZMQ block
+    ///     - Unlike blocks on disk, there is no magic number or blocksize passed at the start of a ZMQ block
     ///     https://en.bitcoin.it/wiki/Block_hashing_algorithm
     /// </summary>
-    public class Block : Serializer
+    public class Block : Serializer, IDatabaseData
     {
         public BlockHeader Header { get; private set; }
         public Transaction[] Transactions { get; private set; }
 
         public uint BlockSize { get; private set; }
-        public byte[] BlockHash => Header.BlockHash;
+        public string BlockHash => Header.BlockHashHex;
 
         public bool LengthMatch { get; private set; }
+
+        // database fields:
+        public ObjectId Id { get; set; }
+        public long FirstSeen { get; set; }
+
+        /// <inheritdoc />
+        /// <summary>
+        ///     Constructor
+        ///     - creates an empty block object
+        ///     - used for LiteDB queries
+        /// </summary>
+        public Block() : base(new List<byte>())
+        {
+        }
 
         /// <inheritdoc />
         /// <summary>
@@ -61,6 +75,7 @@ namespace BitcoinWebSocket.Bitcoin
         /// </summary>
         private Transaction DecodeTX()
         {
+            var origOffset = Offset;
             // tx version - uint32
             var txVersion = ReadUInt();
             var hasWitness = false;
@@ -106,12 +121,17 @@ namespace BitcoinWebSocket.Bitcoin
                     input.Witness = ReadVector();
             }
 
+            // transaction lock_time
             var lockTime = ReadUInt();
 
-            // strict validation - we should be at the end of the transaction
-            LengthMatch = Offset == ByteData.Length;
+            // hash the entire transaction for the TXID
+            var txLength = Offset - origOffset;
+            Offset = origOffset;
 
-            return new Transaction(BlockHash, txVersion, hasWitness, inputs, outputs, lockTime);
+            var byteData = ReadSlice(txLength);
+
+
+            return new Transaction(byteData, BlockHash, txVersion, hasWitness, inputs, outputs, lockTime);
         }
     }
 }

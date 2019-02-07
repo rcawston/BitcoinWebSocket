@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace BitcoinWebSocket.Bitcoin
 {
+    /// <summary>
+    ///     Bitcoin Data Serializer
+    ///     - reads in raw byte data from a bitcoin transaction or block
+    /// </summary>
     public class Serializer
     {
         protected byte[] ByteData;

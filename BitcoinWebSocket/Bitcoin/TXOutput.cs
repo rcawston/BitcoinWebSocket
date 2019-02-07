@@ -34,6 +34,9 @@ namespace BitcoinWebSocket.Bitcoin
 
         // storage of the output script
         private Script _script;
+
+        public string ScriptDataHex => _script.DataChunks.Count > 0 ? ByteToHex.ByteArrayToHex(_script.DataChunks[0]) : null;
+
         // public getter/setter for the output script
         public byte[] Script
         {

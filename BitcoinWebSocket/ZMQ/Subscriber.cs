@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using NetMQ;
 using NetMQ.Sockets;
@@ -18,12 +16,12 @@ namespace BitcoinWebSocket.ZMQ
         private readonly Thread _worker;
         private readonly string _zmqConnectTo;
         private readonly string _zmqSubscribeTopic;
-        private readonly Consumer.Consumer _consumer;
+        private readonly Consumer.Consumer<byte[]> _consumer;
 
         /// <summary>
         ///     Constructor
         /// </summary>
-        public Subscriber(string connectTo, string subscribeTo, Consumer.Consumer consumer)
+        public Subscriber(string connectTo, string subscribeTo, Consumer.Consumer<byte[]> consumer)
         {
             _zmqConnectTo = connectTo;
             _zmqSubscribeTopic = subscribeTo;
