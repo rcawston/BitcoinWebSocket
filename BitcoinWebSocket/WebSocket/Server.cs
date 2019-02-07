@@ -97,7 +97,9 @@ namespace BitcoinWebSocket.WebSocket
                 lock_time = transaction.LockTime,
                 outputs = outputs,
                 txid = transaction.TXIDHex,
-                version = transaction.TXVersion
+                version = transaction.TXVersion,
+                first_seen = transaction.FirstSeen,
+                last_updated = transaction.LastUpdated
             }));
         }
 
@@ -148,14 +150,18 @@ namespace BitcoinWebSocket.WebSocket
 
             switch (request.op)
             {
-                // address subscription request?
+                // subscription request?
                 case "addr_sub":
+                case "data_sub":
                     if (_socketSubscriptions.TryGetValue(socket, out var val))
                     {
                         // record the subscription
-                        var subRequest = new Subscription(request.addr, SubscriptionType.ADDRESS);
+                        var type = request.op == "data_sub"
+                            ? SubscriptionType.OP_RETURN_PREFIX
+                            : SubscriptionType.ADDRESS;
+                        var subRequest = new Subscription(request.addr, type);
                         _socketSubscriptions[socket].Add(subRequest);
-                        if (!Subscriptions.Exists(x => x.subTo == request.addr && x.type == SubscriptionType.ADDRESS))
+                        if (!Subscriptions.Exists(x => x.subTo == request.addr && x.type == type))
                             Subscriptions.Add(subRequest);
                         // save subscription to database
                         Program.Database.EnqueueTask(new DatabaseWrite(subRequest), 0);
@@ -168,44 +174,17 @@ namespace BitcoinWebSocket.WebSocket
 
                     break;
 
-                // address unsubscribe request?
+                // unsubscribe request?
                 case "addr_unsub":
-                    if (_socketSubscriptions.TryGetValue(socket, out _))
-                        _socketSubscriptions[socket].RemoveAll(x =>
-                            x.type == SubscriptionType.ADDRESS && x.subTo.Equals(request.addr));
-                    else
-                        socket.Send(JsonConvert.SerializeObject(new OutgoingError
-                            {error = "Error with internal WebSocket state", op = "error"}));
-                    break;
-
-                // op_return data subscription request?
-                case "data_sub":
-                    if (_socketSubscriptions.TryGetValue(socket, out _))
-                    {
-                        // record the subscription
-                        var subRequest = new Subscription(request.addr, SubscriptionType.OP_RETURN_PREFIX);
-                        _socketSubscriptions[socket].Add(subRequest);
-                        if (!Subscriptions.Exists(x => x.subTo == request.addr && x.type == SubscriptionType.OP_RETURN_PREFIX))
-                            Subscriptions.Add(subRequest);
-                        // save subscription to database
-                        Program.Database.EnqueueTask(new DatabaseWrite(subRequest), 0);
-                    }
-                    else
-                    {
-                        socket.Send(JsonConvert.SerializeObject(new OutgoingError
-                            { error = "Error with internal WebSocket state", op = "error" }));
-                    }
-
-                    break;
-
-                // op_return data unsubscribe request?
                 case "data_unsub":
                     if (_socketSubscriptions.TryGetValue(socket, out _))
                         _socketSubscriptions[socket].RemoveAll(x =>
-                            x.type == SubscriptionType.OP_RETURN_PREFIX && x.subTo.Equals(request.addr));
+                            x.type == (request.op == "data_unsub"
+                                ? SubscriptionType.OP_RETURN_PREFIX
+                                : SubscriptionType.ADDRESS) && x.subTo.Equals(request.addr));
                     else
                         socket.Send(JsonConvert.SerializeObject(new OutgoingError
-                            { error = "Error with internal WebSocket state", op = "error" }));
+                            {error = "Error with internal WebSocket state", op = "error"}));
                     break;
                 
                 // simple ping/liveness check

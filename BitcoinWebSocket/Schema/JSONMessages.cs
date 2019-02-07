@@ -24,12 +24,12 @@ namespace BitcoinWebSocket.Schema
     /// </summary>
     public class OutgoingMessageTXOutput : IOutgoingMessageOutput
     {
+        // base58 or bech32 formatted address to which the output spends
+        public string addr { get; set; }
         // value spent to the output
         public ulong value { get; set; }
         // type of output, if known type
         public OutputType type { get; set; }
-        // base58 or bech32 formatted address to which the output spends
-        public string addr { get; set; }
     }
 
     /// <summary>
@@ -50,10 +50,12 @@ namespace BitcoinWebSocket.Schema
     public class OutgoingTXMessage
     {
         public string op { get; set; }
-        public long lock_time { get; set; }
-        public uint version { get; set; }
         public string txid { get; set; }
         public IOutgoingMessageOutput[] outputs { get; set; }
+        public long lock_time { get; set; }
+        public uint version { get; set; }
+        public long first_seen { get; set; }
+        public long last_updated { get; set; }
     }
 
     /// <summary>

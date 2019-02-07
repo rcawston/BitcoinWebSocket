@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using BitcoinWebSocket.Schema;
 using BitcoinWebSocket.Util;
@@ -45,7 +46,8 @@ namespace BitcoinWebSocket.Bitcoin
         public Transaction(IEnumerable<byte> txBytes) : base(txBytes)
         {
             var sha256 = new SHA256Managed();
-            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
+            // double sha256 hash, reverse bytes, then convert to hex
+            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)).Reverse().ToArray());
             Decode();
         }
 
@@ -58,7 +60,7 @@ namespace BitcoinWebSocket.Bitcoin
         public Transaction(IEnumerable<byte> txBytes, string inclusionBlock, uint txVersion, bool hasWitness, TXInput[] inputs, TXOutput[] outputs, uint lockTime) : base(txBytes)
         {
             var sha256 = new SHA256Managed();
-            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
+            TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)).Reverse().ToArray());
             IncludedInBlock = inclusionBlock;
             TXVersion = txVersion;
             HasWitness = hasWitness;

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Security.Cryptography;
 using BitcoinWebSocket.Util;
+using System.Linq;
 
 namespace BitcoinWebSocket.Bitcoin
 {    
@@ -67,9 +68,9 @@ namespace BitcoinWebSocket.Bitcoin
             // strict validation - we should be at the end of the header
             LengthMatch = Offset == ByteData.Length;
 
-            // blockHash = sha256(sha256(header_data))
+            // block hash = sha256(sha256(header_data)) -> reverse byte data -> convert to hex
             SHA256 sha256 = new SHA256Managed();
-            BlockHashHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)));
+            BlockHashHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)).Reverse().ToArray());
         }
     }
 }
