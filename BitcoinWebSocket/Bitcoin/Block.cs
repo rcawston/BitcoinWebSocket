@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BitcoinWebSocket.Schema;
 using LiteDB;
 
@@ -22,6 +23,7 @@ namespace BitcoinWebSocket.Bitcoin
         public bool LengthMatch { get; private set; }
 
         // database fields:
+        public int Height { get; set; }
         public ObjectId Id { get; set; }
         public long FirstSeen { get; set; }
 
@@ -131,7 +133,8 @@ namespace BitcoinWebSocket.Bitcoin
             var byteData = ReadSlice(txLength);
 
 
-            return new Transaction(byteData, BlockHash, txVersion, hasWitness, inputs, outputs, lockTime);
+            return new Transaction(byteData, BlockHash, txVersion, hasWitness, inputs, outputs, lockTime)
+                { FirstSeen = DateTimeOffset.UtcNow.ToUnixTimeSeconds(), LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeSeconds()};
         }
     }
 }

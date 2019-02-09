@@ -61,6 +61,16 @@ namespace BitcoinWebSocket.Consumer
         {
             return _subscriptions.FindAll().ToArray();
         }
+        
+        /// <summary>
+        ///     Gets all subscriptions from the database
+        /// </summary>
+        /// <returns></returns>
+        public Block GetLastBlock()
+        {
+            var lastHeight = _blocks.Max(x => x.Height);
+            return _blocks.FindOne(x => x.Height == lastHeight);
+        }
 
         /// <summary>
         ///     Processes database writes
@@ -83,7 +93,7 @@ namespace BitcoinWebSocket.Consumer
                     {
                         var tx = txSearch.First();
                         tx.IncludedInBlock = transaction.IncludedInBlock;
-                        tx.LastUpdated = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                        tx.LastUpdated = transaction.LastUpdated;
                         tx.TXIDHex = transaction.TXIDHex;
                         _transactions.Update(tx);
                     }
@@ -92,7 +102,6 @@ namespace BitcoinWebSocket.Consumer
                 {
                     // no; so, add the transaction
                     _transactions.Insert(transaction);
-
                 }
             }
 
@@ -114,6 +123,10 @@ namespace BitcoinWebSocket.Consumer
                 if (blockSearch == null)
                 {
                     // yes; so, just store it without PrevHash check
+                    // use JSON RPC to fetch block height
+                    var blockHeight = Program.RPCClient.GetBlockHeight(block.BlockHash);
+                    block.Height = blockHeight;
+                    // save to db
                     _blocks.Insert(block);
                 }
                 else
@@ -122,10 +135,16 @@ namespace BitcoinWebSocket.Consumer
                     blockSearch = _blocks.FindOne(x => x.BlockHash == block.Header.PrevBlockHash);
                     if (blockSearch == null)
                     {
-                        // TODO: we are missing the prev block
+                        // TODO: we are missing the prev block; this shouldn't happen...
+                        var lastHeight = _blocks.Max(x => x.Height);
+                        blockSearch = _blocks.FindOne(x => x.Height == lastHeight);
+                        // TODO: do a re-scan from the last seen block
                     }
                     else
                     {
+                        // block height is prevblock height + 1
+                        block.Height = blockSearch.Height + 1;
+                        // save to db
                         _blocks.Insert(block);
                     }
                 }

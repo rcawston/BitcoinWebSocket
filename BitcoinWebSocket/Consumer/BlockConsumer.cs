@@ -40,30 +40,7 @@ namespace BitcoinWebSocket.Consumer
             foreach (var transaction in block.Transactions)
             {
                 // check all outputs of the transaction
-                foreach (var output in transaction.Outputs)
-                {
-                    // does this transaction contain an output we are watching?
-                    if (Program.WebSocketServer.Subscriptions.Exists(a =>
-                        a.type == SubscriptionType.ADDRESS && a.subTo == output.Address))
-                    {
-                        // yes; so, broadcast an update for this transaction
-                        Program.WebSocketServer.BroadcastTransaction(transaction, output.Address);
-
-                        // save the transaction in the database
-                        Program.Database.EnqueueTask(new DatabaseWrite(transaction), 0);
-                    }
-                    // does this transaction include an OP_RETURN data prefix we are watching for?
-                    else if (output.Type == OutputType.DATA && Program.WebSocketServer.Subscriptions.Exists(a =>
-                                 a.type == SubscriptionType.OP_RETURN_PREFIX &&
-                                 output.ScriptDataHex.StartsWith(a.subTo)))
-                    {
-                        // yes; so, broadcast an update for this OP_RETURN
-                        // TODO
-
-                        // save the transaction in the database
-                        Program.Database.EnqueueTask(new DatabaseWrite(transaction), 0);
-                    }
-                }
+                SubscriptionCheck.CheckForSubscription(transaction);
             }
 
             // Add block data to internal db, and check for re-org
