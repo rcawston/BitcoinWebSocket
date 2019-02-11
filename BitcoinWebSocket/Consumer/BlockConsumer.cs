@@ -34,17 +34,18 @@ namespace BitcoinWebSocket.Consumer
 
             Console.WriteLine("Received Block with " + block.Transactions.Length + " transactions.\n" +
                               " Previous Block: " + block.Header.PrevBlockHash + "\n" +
-                              " Block Hash: " + block.BlockHash + "\n" +
-                              ". Length Validated = " + (block.LengthMatch ? "YES" : "NO"));
+                              " Block Hash: " + block.BlockHash);
 
+
+            // Add block data to internal db, and check for re-org
+            Program.Database.EnqueueTask(new DatabaseWrite(block), 0);
+
+            // check all transactions
             foreach (var transaction in block.Transactions)
             {
                 // check all outputs of the transaction
                 SubscriptionCheck.CheckForSubscription(transaction);
             }
-
-            // Add block data to internal db, and check for re-org
-            Program.Database.EnqueueTask(new DatabaseWrite(block), 0);
         }
     }
 }

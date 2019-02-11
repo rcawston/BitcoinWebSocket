@@ -51,7 +51,7 @@ namespace BitcoinWebSocket.Bitcoin
             BlockVersion = ReadUInt();
 
             // previous block hash
-            PrevBlockHash = ByteToHex.ByteArrayToHex(ReadSlice(32));
+            PrevBlockHash = ByteToHex.ByteArrayToHex(ReadSlice(32).Reverse().ToArray());
 
             // merkle root hash
             MerkleRootHash = ReadSlice(32);

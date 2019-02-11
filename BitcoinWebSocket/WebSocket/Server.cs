@@ -22,20 +22,14 @@ namespace BitcoinWebSocket.WebSocket
         private readonly Dictionary<IWebSocketConnection, List<Subscription>> _socketSubscriptions =
             new Dictionary<IWebSocketConnection, List<Subscription>>();
 
-        // a list of all subscriptions (a socket closing does not remove the subscription)
-        public readonly List<Subscription> Subscriptions;
-
         /// <summary>
         ///     Constructor
         ///     - starts websocket server
         ///     - listens for socket opened, closed, and messages
         /// </summary>
         /// <param name="listenOn">WebSocket connection url/port e.g. "ws://localhost:8181"</param>
-        /// <param name="subscriptions">Initial set of subscriptions</param>
-        public Server(string listenOn, IEnumerable<Subscription> subscriptions)
+        public Server(string listenOn)
         {
-            Subscriptions = subscriptions.ToList();
-
             var server = new WebSocketServer(listenOn);
             server.Start(socket =>
             {
@@ -93,7 +87,7 @@ namespace BitcoinWebSocket.WebSocket
             // create JSON message and send to the subscribing websocket client
             socket.Send(JsonConvert.SerializeObject(new OutgoingTXMessage
             {
-                op = transaction.IncludedInBlock == null ? "utx" : "ctx", // utx for unconfirmed, ctx for confirmed
+                op = transaction.IncludedInBlockHex == null ? "utx" : "ctx", // utx for unconfirmed, ctx for confirmed
                 lock_time = transaction.LockTime,
                 outputs = outputs,
                 txid = transaction.TXIDHex,
@@ -161,8 +155,8 @@ namespace BitcoinWebSocket.WebSocket
                             : SubscriptionType.ADDRESS;
                         var subRequest = new Subscription(request.addr, type);
                         _socketSubscriptions[socket].Add(subRequest);
-                        if (!Subscriptions.Exists(x => x.subTo == request.addr && x.type == type))
-                            Subscriptions.Add(subRequest);
+                        if (!Program.Subscriptions.Exists(x => x.subTo == request.addr && x.type == type))
+                            Program.Subscriptions.Add(subRequest);
                         // save subscription to database
                         Program.Database.EnqueueTask(new DatabaseWrite(subRequest), 0);
                     }

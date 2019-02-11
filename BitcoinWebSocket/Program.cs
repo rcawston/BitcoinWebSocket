@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
+using System.Linq;
 using BitcoinWebSocket.Bitcoin;
 using BitcoinWebSocket.Consumer;
 using BitcoinWebSocket.Util;
@@ -12,6 +14,8 @@ namespace BitcoinWebSocket
         public static DatabaseConsumer Database;
         public static WebSocket.Server WebSocketServer;
         public static RPCClient RPCClient;
+        // a list of all subscriptions (a socket closing does not remove the subscription)
+        public static List<Subscription> Subscriptions;
 
         private static void Main(string[] args)
         {
@@ -20,7 +24,7 @@ namespace BitcoinWebSocket
             // init the database
             Database = new DatabaseConsumer(databaseFileName);
             // get saved subscriptions
-            var subscriptions = Database.GetSubscriptions();
+            Subscriptions = Database.GetSubscriptions().ToList();
 
             // get RPC connection params from app settings
             var rpcURL = ConfigurationManager.AppSettings["RPCURI"];
@@ -33,15 +37,16 @@ namespace BitcoinWebSocket
             var lastBlock = Database.GetLastBlock();
             var blockCount = RPCClient.GetBlockCount();
             // write out of the current block height, and last processed block height
-            Console.WriteLine("Current block: " + blockCount + ". " + (lastBlock == null ? " No previous block data found." : " Last block processed: " + lastBlock.Height));
-            // if we already have block data, fetch transactions since that block
-            if (lastBlock != null)
+            Console.Write("Current block: " + blockCount + ". " + (lastBlock == null ? " No previous block data found." : " Last block processed: " + lastBlock.Height));
+            // if we already have block data, fetch transactions since the last seen block
+            if (lastBlock != null && lastBlock.Height < blockCount)
             {
+                Console.WriteLine(". processing " + (blockCount - lastBlock.Height) + " blocks...");
                 // record how long it takes to process the block data
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
                 // look at all blocks from the last block that was processed until the current height
-                for (var blockIndex = lastBlock.Height; blockIndex < blockCount; blockIndex++)
+                for (var blockIndex = lastBlock.Height; blockIndex <= blockCount; blockIndex++)
                 {
                     // fetch raw block data by height
                     var blockHash = RPCClient.GetBlockHash(blockIndex);
@@ -51,25 +56,26 @@ namespace BitcoinWebSocket
                     {
                         FirstSeen = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                     };
+                    // add the block to the database
+                    Database.EnqueueTask(new DatabaseWrite(block), 0);
                     // process all transactions that occured in the block
                     foreach (var transaction in block.Transactions)
                     {
                         // does this transaction contain an output we are watching?
                         SubscriptionCheck.CheckForSubscription(transaction);
                     }
-                    // add the block to the database
-                    Database.EnqueueTask(new DatabaseWrite(block), 0);
                 }
                 
                 stopWatch.Stop();
                 var elapsed = stopWatch.Elapsed;
-                Console.WriteLine("Processed blocks in " + $"{elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}.{elapsed.Milliseconds / 10:00}");
+                Console.Write("Processed blocks in " + $"{elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}.{elapsed.Milliseconds / 10:00}");
             }
+            Console.WriteLine();
 
             // get websocket listen address/port from app settings
             var websocketListen = ConfigurationManager.AppSettings["WebSocketListen"];
             // start websocket server
-            WebSocketServer = new WebSocket.Server(websocketListen, subscriptions);
+            WebSocketServer = new WebSocket.Server(websocketListen);
 
             // get ZMQ server address from app settings
             var zmqServerTX = ConfigurationManager.AppSettings["ZMQPublisherRawTX"];

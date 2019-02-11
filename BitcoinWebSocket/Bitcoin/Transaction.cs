@@ -20,12 +20,13 @@ namespace BitcoinWebSocket.Bitcoin
         public uint TXVersion { get; private set; }
         public uint LockTime { get; private set; }
         public bool LengthMatch { get; private set; }
-        public string IncludedInBlock { get; set; }
+        public string IncludedInBlockHex { get; set; }
 
         // database fields:
         public ObjectId Id { get; set; }
         public long LastUpdated { get; set; }
         public long FirstSeen { get; set; }
+        public int IncludedAtBlockHeight { get; set; }
 
         /// <inheritdoc />
         /// <summary>
@@ -57,11 +58,11 @@ namespace BitcoinWebSocket.Bitcoin
         ///     - creates a transaction object given transaction properties
         ///     - used for transactions found in blocks
         /// </summary>
-        public Transaction(IEnumerable<byte> txBytes, string inclusionBlock, uint txVersion, bool hasWitness, TXInput[] inputs, TXOutput[] outputs, uint lockTime) : base(txBytes)
+        public Transaction(IEnumerable<byte> txBytes, string inclusionBlockHex, uint txVersion, bool hasWitness, TXInput[] inputs, TXOutput[] outputs, uint lockTime) : base(txBytes)
         {
             var sha256 = new SHA256Managed();
             TXIDHex = ByteToHex.ByteArrayToHex(sha256.ComputeHash(sha256.ComputeHash(ByteData)).Reverse().ToArray());
-            IncludedInBlock = inclusionBlock;
+            IncludedInBlockHex = inclusionBlockHex;
             TXVersion = txVersion;
             HasWitness = hasWitness;
             Inputs = inputs;

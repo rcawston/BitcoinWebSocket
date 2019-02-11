@@ -26,6 +26,8 @@ namespace BitcoinWebSocket.Bitcoin
         public int Height { get; set; }
         public ObjectId Id { get; set; }
         public long FirstSeen { get; set; }
+        public bool Orphaned { get; set; } = false;
+        public bool IsChainTip { get; set; } = false;
 
         /// <inheritdoc />
         /// <summary>

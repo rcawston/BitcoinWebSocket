@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
+using BitcoinWebSocket.Schema;
 using BitcoinWebSocket.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -34,6 +36,30 @@ namespace BitcoinWebSocket.Bitcoin
         }
 
         /// <summary>
+        ///     Gets a list of all chain tips
+        /// </summary>
+        /// <returns>array of ChainTips</returns>
+        public ChainTip[] GetChainTips()
+        {
+            var ret = SendCommand("getchaintips");
+            var result = ret.GetValue("result").ToObject<ChainTip[]>();
+            return result;
+        }
+
+        /// <summary>
+        ///     Gets the branch length of a given chain tip hash
+        /// </summary>
+        /// <returns>length of the branch, or -1 if not found</returns>
+        public int GetBranchLength(string blockHash)
+        {
+            var chainTips = GetChainTips();
+            var chainTip = chainTips.First(x => string.Equals(x.hash, blockHash, StringComparison.CurrentCultureIgnoreCase));
+            if (chainTip == null)
+                return -1;
+            return chainTip.branchlen;
+        }
+
+        /// <summary>
         ///     Gets the current block height
         /// </summary>
         /// <returns>block height</returns>
@@ -61,7 +87,7 @@ namespace BitcoinWebSocket.Bitcoin
         /// <returns>raw block data as hex</returns>
         public string GetBlockData(string blockHash)
         {
-            var ret = SendCommand("getblock", blockHash);
+            var ret = SendCommand("getblock", blockHash, 0);
             var result = ret.GetValue("result");
             return result.Value<string>();
         }
