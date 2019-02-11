@@ -116,7 +116,7 @@ namespace BitcoinWebSocket.Consumer
             }
 
             // is this the first block we've stored?
-            blockSearch = _blocks.FindOne(x => x.LengthMatch);
+            blockSearch = _blocks.FindOne(x => x.IsChainTip);
             if (blockSearch == null)
             {
                 // yes; so, just store it without PrevHash check
@@ -222,7 +222,7 @@ namespace BitcoinWebSocket.Consumer
 
             // this is a regular block insert - we have previous block, and the previous block is our last known chaintip
             chainTipBlock.IsChainTip = false;
-            _blocks.Update(blockSearch);
+            _blocks.Update(chainTipBlock);
             block.IsChainTip = true;
             _chainTipHash = block.BlockHash;
             // save to db
